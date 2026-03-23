@@ -1,8 +1,10 @@
 import whisper
 import argparse
 import os
-import sys
 import subprocess
+
+AUDIOS_DIR = "audios"
+OUTPUT_DIR = "transcripciones"
 
 
 def convert_to_mp3(input_path: str) -> str:
@@ -19,38 +21,47 @@ def convert_to_mp3(input_path: str) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="Transcribir audios con Whisper")
-    parser.add_argument("files", nargs="+", help="Archivos de audio a transcribir")
     parser.add_argument("--language", default="Spanish", help="Idioma del audio (default: Spanish)")
     parser.add_argument("--model", default="base", help="Modelo Whisper a usar (default: base)")
-    parser.add_argument("--save", action="store_true", help="Guardar transcripciones como archivos .txt")
     args = parser.parse_args()
+
+    if not os.path.exists(AUDIOS_DIR):
+        print(f"[ERROR] No existe la carpeta '{AUDIOS_DIR}'. Creala y poné los .ogg ahí.")
+        return
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    ogg_files = [f for f in os.listdir(AUDIOS_DIR) if f.lower().endswith(".ogg")]
+
+    if not ogg_files:
+        print(f"[INFO] No hay archivos .ogg en '{AUDIOS_DIR}'.")
+        return
 
     print(f"\nCargando modelo '{args.model}'...")
     model = whisper.load_model(args.model)
+    print(f"Archivos encontrados: {len(ogg_files)}\n")
 
-    for audio_path in args.files:
-        if not os.path.exists(audio_path):
-            print(f"\n[ERROR] Archivo no encontrado: {audio_path}")
-            continue
+    for filename in ogg_files:
+        audio_path = os.path.join(AUDIOS_DIR, filename)
 
-        if audio_path.lower().endswith(".ogg"):
-            print(f"[Convirtiendo] {audio_path} → MP3...")
-            audio_path = convert_to_mp3(audio_path)
-            print(f"[Convertido] {audio_path}")
+        print(f"[Convirtiendo] {filename} → MP3...")
+        mp3_path = convert_to_mp3(audio_path)
 
-        print(f"\nTranscribiendo: {audio_path}")
-        result = model.transcribe(audio_path, language=args.language)
+        print(f"[Transcribiendo] {filename}...")
+        result = model.transcribe(mp3_path, language=args.language)
         text = result["text"].strip()
 
-        print(f"\n--- {audio_path} ---")
+        print(f"\n--- {filename} ---")
         print(text)
         print("-" * 40)
 
-        if args.save:
-            out_path = os.path.splitext(audio_path)[0] + ".txt"
-            with open(out_path, "w", encoding="utf-8") as f:
-                f.write(text)
-            print(f"[Guardado] {out_path}")
+        txt_filename = os.path.splitext(filename)[0] + ".txt"
+        out_path = os.path.join(OUTPUT_DIR, txt_filename)
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(text)
+        print(f"[Guardado] {out_path}\n")
+
+        os.remove(mp3_path)
 
 
 if __name__ == "__main__":
