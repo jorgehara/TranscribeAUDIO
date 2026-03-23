@@ -2,6 +2,19 @@ import whisper
 import argparse
 import os
 import sys
+import subprocess
+
+
+def convert_to_mp3(input_path: str) -> str:
+    """Convierte un archivo de audio a MP3 usando FFmpeg. Retorna el path del MP3."""
+    output_path = os.path.splitext(input_path)[0] + ".mp3"
+    subprocess.run(
+        ["ffmpeg", "-i", input_path, "-codec:a", "libmp3lame", "-qscale:a", "2", output_path, "-y"],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    return output_path
 
 
 def main():
@@ -19,6 +32,11 @@ def main():
         if not os.path.exists(audio_path):
             print(f"\n[ERROR] Archivo no encontrado: {audio_path}")
             continue
+
+        if audio_path.lower().endswith(".ogg"):
+            print(f"[Convirtiendo] {audio_path} → MP3...")
+            audio_path = convert_to_mp3(audio_path)
+            print(f"[Convertido] {audio_path}")
 
         print(f"\nTranscribiendo: {audio_path}")
         result = model.transcribe(audio_path, language=args.language)
