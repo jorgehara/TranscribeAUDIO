@@ -205,3 +205,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Archivos de audio/video (no commitear archivos pesados)
+audios/*.ogg
+audios/*.mp3
+mp4/*.mp4
+mp3/*.mp3
+mp3-input/*.mp3
+transcripciones/*.txt
